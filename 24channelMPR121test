@@ -1,0 +1,104 @@
+/*********************************************************
+This is modified from adafruit MPR121test
+Written by Limor Fried/Ladyada for Adafruit Industries.  
+BSD license, all text above must be included in any redistribution
+
+
+Using Leonardo and two MPR121 sensors 
+- sensor PCB address 0x5A
+(SCL wired to D3, SDA wired to D2, Vin to 5V )
+- sensor shield address 0x5B
+(ADDR wired to 3V)
+**********************************************************/
+
+#include <Wire.h>
+#include "Adafruit_MPR121.h"
+
+Adafruit_MPR121 cap1 = Adafruit_MPR121();
+Adafruit_MPR121 cap2 = Adafruit_MPR121();
+
+uint16_t lasttouched1 = 0;
+uint16_t currtouched1 = 0;
+uint16_t lasttouched2 = 0;
+uint16_t currtouched2 = 0;
+
+void setup() {
+  Serial.begin(9600);
+
+  cap1.begin(0x5A);
+  cap2.begin(0x5B);
+  
+
+  while (!Serial) { 
+    delay(10);
+  }
+  
+  if (!cap1.begin(0x5A)) {
+    Serial.println("cap1 not found, check wiring?");
+    while (1);
+  }
+  Serial.println("cap1 found!");
+
+
+  
+  if (!cap2.begin(0x5B)) {
+    Serial.println("cap2 not found, check wiring?");
+    while (1);
+  }
+  Serial.println("cap2 found!");
+}
+
+
+void loop() {
+  // Get the currently touched pads
+  currtouched1 = cap1.touched();
+  currtouched2 = cap2.touched();
+   
+  for (uint8_t i=0; i<12; i++) {
+    // it if *is* touched and *wasnt* touched before, alert!
+    if ((currtouched1 & _BV(i)) && !(lasttouched1 & _BV(i)) ) {
+      Serial.print(i); Serial.println(" 1 touched");
+    }
+    // if it *was* touched and now *isnt*, alert!
+    if (!(currtouched1 & _BV(i)) && (lasttouched1 & _BV(i)) ) {
+      Serial.print(i); Serial.println(" 1 released");
+    }
+  }
+
+  // reset our state
+  lasttouched1 = currtouched1;
+
+  
+  for (uint8_t i=0; i<12; i++) {
+    // it if *is* touched and *wasnt* touched before, alert!
+    if ((currtouched2 & _BV(i)) && !(lasttouched2 & _BV(i)) ) {
+      Serial.print(i); Serial.println(" 2 touched");
+    }
+    // if it *was* touched and now *isnt*, alert!
+    if (!(currtouched2 & _BV(i)) && (lasttouched2 & _BV(i)) ) {
+      Serial.print(i); Serial.println(" 2 released");
+    }
+  }
+
+  // reset our state
+  lasttouched2 = currtouched2;
+
+  // comment out this line for detailed data from the sensor!
+  return;
+  
+  // debugging info, what
+  Serial.print("\t\t\t\t\t\t\t\t\t\t\t\t\t 0x"); Serial.println(cap1.touched(), HEX);
+  Serial.print("Filt: ");
+  for (uint8_t i=0; i<12; i++) {
+    Serial.print(cap1.filteredData(i)); Serial.print("\t");
+  }
+  Serial.println();
+  Serial.print("Base: ");
+  for (uint8_t i=0; i<12; i++) {
+    Serial.print(cap1.baselineData(i)); Serial.print("\t");
+  }
+  Serial.println();
+  
+  
+  delay(100);
+}
